@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: pagewise-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_INDEX_NAME
+        sync: false
+      - key: UPLOAD_ADMIN_TOKEN
+        sync: false
+      - key: FRONTEND_ORIGINS
+        sync: false

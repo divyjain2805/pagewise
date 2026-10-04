@@ -6,6 +6,7 @@ import {
 } from "../middleware/uploadAuth.js";
 
 const originalToken = process.env.UPLOAD_ADMIN_TOKEN;
+const originalFrontendOrigins = process.env.FRONTEND_ORIGINS;
 const TEST_TOKEN = "test-only-upload-admin-token";
 
 beforeEach(() => {
@@ -17,6 +18,11 @@ after(() => {
     delete process.env.UPLOAD_ADMIN_TOKEN;
   } else {
     process.env.UPLOAD_ADMIN_TOKEN = originalToken;
+  }
+  if (originalFrontendOrigins === undefined) {
+    delete process.env.FRONTEND_ORIGINS;
+  } else {
+    process.env.FRONTEND_ORIGINS = originalFrontendOrigins;
   }
 });
 
@@ -70,8 +76,9 @@ test("fails closed when the admin token is not configured", () => {
   }
 });
 
-test("allows same-origin uploads and rejects cross-origin or origin-less requests", () => {
-  const runOriginCheck = origin => {
+test("allows same-origin and configured frontend uploads only", () => {
+  process.env.FRONTEND_ORIGINS = "https://pagewise.vercel.app, https://docs.example.com";
+  const runOriginCheck = (origin, host = "app.example.com") => {
     const response = {
       statusCode: 200,
       status(code) {
@@ -87,7 +94,7 @@ test("allows same-origin uploads and rejects cross-origin or origin-less request
       protocol: "https",
       get(name) {
         if (name.toLowerCase() === "origin") return origin;
-        if (name.toLowerCase() === "host") return "app.example.com";
+        if (name.toLowerCase() === "host") return host;
         return undefined;
       }
     };
@@ -101,6 +108,8 @@ test("allows same-origin uploads and rejects cross-origin or origin-less request
   };
 
   assert.equal(runOriginCheck("https://app.example.com").nextCalled, true);
+  assert.equal(runOriginCheck("https://pagewise.vercel.app").nextCalled, true);
+  assert.equal(runOriginCheck("https://docs.example.com").nextCalled, true);
   assert.equal(runOriginCheck("https://attacker.example").response.statusCode, 403);
   assert.equal(runOriginCheck(undefined).response.statusCode, 403);
 });

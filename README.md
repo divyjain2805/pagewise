@@ -37,6 +37,7 @@ For production mode, use `npm start` instead of `npm run dev`.
 | `PINECONE_API_KEY` | Pinecone API key |
 | `PINECONE_INDEX_NAME` | Name of the 768-dimensional Pinecone index |
 | `UPLOAD_ADMIN_TOKEN` | Secret bearer token required to upload or replace the shared PDF |
+| `FRONTEND_ORIGINS` | Comma-separated exact browser origins allowed to call the API, such as `https://your-site.vercel.app` |
 | `PORT` | Optional HTTP port; defaults to `5000` |
 | `TRUST_PROXY_HOPS` | Optional trusted proxy hop count; leave at `0` unless configured for your host |
 
@@ -48,14 +49,16 @@ If deploying behind a reverse proxy, configure `TRUST_PROXY_HOPS` to the exact n
 
 ## Hosting and GitHub
 
-GitHub can host this source code, but GitHub Pages cannot run the Node.js API, PDF processing, or secret API keys. Deploy the Node.js app to a server host that supports Node.js, set the environment variables there, and connect that host to the GitHub repository for continuous deployment. The server serves the frontend and API from the same origin.
+The backend can be deployed to Render from the included `render.yaml` Blueprint. Set the provider API keys, upload token, and the exact Vercel site origin in Render's environment settings. Deploy the `frontend` directory as a Vercel project; set `PAGEWISE_API_URL` to the Render service's base URL in the Vercel project environment settings, then redeploy. The frontend build writes that public API URL into a generated config file; do not put provider secrets in Vercel or frontend files.
+
+The backend accepts browser API requests from its own origin and the exact origins listed in `FRONTEND_ORIGINS`. For a Vercel production domain and a custom domain, list each origin as a comma-separated value (scheme and host only, with no path). GitHub Pages cannot run the Node.js API or process PDFs.
 
 The app has one shared Pinecone namespace. Each successful PDF upload replaces the document used by all visitors, so only upload documents intended to be shared. Uploads are restricted to the site owner using the `UPLOAD_ADMIN_TOKEN`; visitors can still chat with the current shared PDF.
 
 ## Security notes
 
 - Uploaded PDFs are processed temporarily and removed from the server's upload staging directory after processing.
-- PDF replacement requires the `UPLOAD_ADMIN_TOKEN`; uploads require a same-origin request, public chat and uploads are rate-limited, upload size is capped at 20 MB, and cross-origin API access is not enabled.
+- PDF replacement requires the `UPLOAD_ADMIN_TOKEN`; uploads require a configured, allowed frontend origin, public chat and uploads are rate-limited, upload size is capped at 20 MB, and cross-origin API access is restricted to configured origins.
 - Chat and upload endpoints use paid/limited third-party API services; configure provider spending limits and monitor usage before exposing the app publicly.
 - Do not publish credentials, private PDFs, `.env` files, or generated uploads.
 

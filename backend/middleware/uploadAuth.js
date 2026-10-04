@@ -1,5 +1,19 @@
 import { timingSafeEqual } from "node:crypto";
 
+export const getConfiguredFrontendOrigins = () =>
+  new Set(
+    (process.env.FRONTEND_ORIGINS ?? "")
+      .split(",")
+      .map(origin => origin.trim())
+      .filter(Boolean)
+  );
+
+export const isAllowedOrigin = (
+  origin,
+  requestOrigin,
+  allowedOrigins = getConfiguredFrontendOrigins()
+) => origin === requestOrigin || allowedOrigins.has(origin);
+
 export const requireUploadAdmin = (req, res, next) => {
   const expectedToken = process.env.UPLOAD_ADMIN_TOKEN;
   if (!expectedToken) {
@@ -45,7 +59,7 @@ export const requireSameOrigin = (req, res, next) => {
     });
   }
 
-  if (origin !== requestOrigin) {
+  if (!isAllowedOrigin(origin, requestOrigin)) {
     return res.status(403).json({
       error: "This request must come from the Pagewise website."
     });

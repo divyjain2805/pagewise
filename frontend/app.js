@@ -25,6 +25,8 @@ const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 let hasDocument = false;
 let isBusy = false;
 let toastTimer;
+const API_BASE_URL = (window.PAGEWISE_API_BASE_URL || "").replace(/\/+$/, "");
+const apiUrl = path => `${API_BASE_URL}${path}`;
 
 const escapeText = (value) => String(value ?? "");
 
@@ -127,7 +129,7 @@ function updateDocumentStatus(status) {
 
 async function loadDocumentStatus() {
   try {
-    const response = await fetch("/api/document-status");
+    const response = await fetch(apiUrl("/api/document-status"));
     const payload = await response.json();
     if (!response.ok) {
       throw new Error(payload.error || "Could not check the document.");
@@ -264,7 +266,7 @@ async function askQuestion(question) {
   chatFeed.scrollTop = chatFeed.scrollHeight;
 
   try {
-    const response = await fetch("/api/chat", {
+    const response = await fetch(apiUrl("/api/chat"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question: cleanedQuestion })
@@ -315,7 +317,7 @@ function uploadPdf(file) {
   formData.append("pdf", file);
 
   const request = new XMLHttpRequest();
-  request.open("POST", "/api/upload");
+  request.open("POST", apiUrl("/api/upload"));
   request.setRequestHeader("Authorization", `Bearer ${accessKey}`);
   request.upload.addEventListener("progress", event => {
     if (event.lengthComputable) {
@@ -420,7 +422,7 @@ document.querySelector("#clear-chat").addEventListener("click", () => {
   updateChatControls();
 });
 
-fetch("/api/health")
+fetch(apiUrl("/api/health"))
   .then(response => {
     if (!response.ok) throw new Error("Backend is not responding.");
     setConnection(true);

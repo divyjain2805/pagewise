@@ -10,6 +10,7 @@ npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 coverage/
+dist/
 
 # Uploaded documents and temporary files
 backend/uploads/*

@@ -3,7 +3,12 @@ import dotenv from "dotenv";
 import path from "node:path";
 import rateLimit from "express-rate-limit";
 import { fileURLToPath } from "node:url";
-import { requireSameOrigin, requireUploadAdmin } from "./middleware/uploadAuth.js";
+import {
+    getConfiguredFrontendOrigins,
+    isAllowedOrigin,
+    requireSameOrigin,
+    requireUploadAdmin
+} from "./middleware/uploadAuth.js";
 dotenv.config();
 import uploadRoutes
 from "./routes/uploadRoutes.js";
@@ -23,6 +28,38 @@ app.use((req, res, next) => {
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    next();
+});
+
+const configuredFrontendOrigins = getConfiguredFrontendOrigins();
+app.use((req, res, next) => {
+    const origin = req.get("origin");
+    res.vary("Origin");
+
+    if (origin) {
+        let requestOrigin;
+        try {
+            requestOrigin = new URL(`${req.protocol}://${req.get("host")}`).origin;
+        } catch {
+            return res.status(403).json({ error: "This website origin is not allowed." });
+        }
+
+        if (!isAllowedOrigin(origin, requestOrigin, configuredFrontendOrigins)) {
+            return res.status(403).json({ error: "This website origin is not allowed." });
+        }
+        res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+
+    if (req.method === "OPTIONS") {
+        if (!origin) {
+            return res.status(403).end();
+        }
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+        res.setHeader("Access-Control-Max-Age", "600");
+        return res.status(204).end();
+    }
+
     next();
 });
 
